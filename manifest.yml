@@ -1,0 +1,8 @@
+---
+applications:
+- name: test-rest-service
+  memory: 256M
+  instances: 1
+  host: test-rest-service
+  domain: test.com
+  path: build/libs/gs-rest-service-0.1.0.jar

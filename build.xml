@@ -1,0 +1,111 @@
+<?xml version="1.0"?>
+<project name="AetherlightApi" default="deploy-local" basedir="." xmlns:artifact="antlib:org.apache.maven.artifact.ant">
+
+	<path id="maven-ant-tasks.classpath" path="lib/maven-ant-tasks-2.1.3.jar" />
+	
+	<typedef resource="org/apache/maven/artifact/ant/antlib.xml"
+	   uri="antlib:org.apache.maven.artifact.ant"
+	   classpathref="maven-ant-tasks.classpath" />
+
+	<echo message="pulling in property files"/>
+		
+	<artifact:pom id="test.pom" file="pom.xml" />
+			
+	<artifact:dependencies filesetId="dependency.fileset" pomRefId="test.pom" />
+	
+	<path id="Maven Dependencies.libraryclasspath">
+		<fileset refid="dependency.fileset" />
+    </path>
+	
+    <path id="test.classpath">
+        <pathelement location="target/classes"/>
+        <path refid="Maven Dependencies.libraryclasspath"/>
+    </path>
+	
+	<!-- TODO: create properties files -->
+	
+	<!-- project-specific variables -->
+	<property name="debuglevel" value="source,lines,vars"/>
+    <property name="target" value="1.7"/>
+    <property name="source" value="1.7"/>
+    <property name="jsp.dir.name" value="ROOT" />
+    <property name="package.name" value="${jsp.dir.name}.war" />
+    <property name="webapp.dir" value="/Library/Tomcat/webapps" />
+	
+	
+	<!-- put everything in a temp folder with the right structure during the build -->
+	<property name="dest.dir" value="target" />
+    <property name="lib.dir" value="${dest.dir}/lib" />
+    <property name="classes.dir" value="${dest.dir}/classes" />
+    <property name="web.dir" value="WebContent" />
+	<property name="env.dir" value="../properties/env" />
+	
+	<property name="package.file" value="${dest.dir}/${package.name}" />
+	
+	<property file="${env.dir}/${ENV}.properties"/>
+	
+	<target name="clean">
+		<delete dir="${dest.dir}" />
+	</target>
+	
+	<target name="init" depends="clean">
+		<mkdir dir="${dest.dir}" />
+        <mkdir dir="${lib.dir}" />
+		<mkdir dir="${classes.dir}" />
+		
+        <copy includeemptydirs="false" todir="${classes.dir}">
+            <fileset dir="src/main/java">
+                <exclude name="**/*.java"/>
+            </fileset>
+        </copy>
+        <!--<copy includeemptydirs="false" todir="${classes.dir}">
+            <fileset dir="src/main/resources">
+                <exclude name="**/*.java"/>
+            </fileset>
+        </copy>-->
+        <!--<copy includeemptydirs="false" todir="${classes.dir}">
+            <fileset dir="src/test/java">
+                <exclude name="**/*.java"/>
+            </fileset>
+        </copy>
+        <copy includeemptydirs="false" todir="${classes.dir}">
+            <fileset dir="src/test/resources">
+                <exclude name="**/*.java"/>
+            </fileset>
+        </copy>-->
+    </target>
+	
+	<target name="copy-libs">
+		<copy todir="${lib.dir}">
+			<fileset refid="dependency.fileset" />
+			<!-- This mapper strips off all leading directory information -->
+			<mapper type="flatten" />
+		</copy>
+	</target>
+	
+	<target name="build-project">
+        <echo message="${ant.project.name}: ${ant.file}"/>
+        <javac debug="true" debuglevel="${debuglevel}" destdir="target/classes" includeantruntime="false" source="${source}" target="${target}">
+            <src path="src/main/java"/>
+            <!--<src path="src/main/resources"/>-->
+            <!--<src path="src/test/java"/>
+            <src path="src/test/resources"/>-->
+            <classpath refid="test.classpath"/>
+        </javac>
+    </target>
+	
+	<!-- Deploy Local Tomcat Server -->
+	<target name="deploy-local" depends="init, build-project, copy-libs">
+		<echo>=== PACKAGE ===</echo>
+		         
+      	<!-- the ant war task. with all resources in place, create the war file -->
+    	<war destfile="${package.file}" needxmlfile='false'>
+			<lib dir="${lib.dir}" />
+			<classes dir="${classes.dir}" />
+		</war>
+		
+		<echo>=== INSTALL ===</echo>
+		<copy file="${package.file}" tofile="${webapp.dir}/${package.name}" overwrite="true" />
+	</target>
+  
+</project>
